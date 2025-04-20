@@ -1,0 +1,24 @@
+{
+  "name": "mongodb-express-chatbot",
+  "version": "1.0.0",
+  "description": "Chatbot for website using gemini mongodb and expressjs",
+  "keywords": [
+    "#chatbot",
+    "#mongodbChatbot"
+  ],
+  "license": "ISC",
+  "author": "Umesha Jayakody",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "mongodb": "^6.5.0"
+  }
+}
