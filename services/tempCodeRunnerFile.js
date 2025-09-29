@@ -27,13 +27,14 @@ async function executeMongoQuery(collection, query) {
 
 export async function handleChat(userMessage) {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-    const chat = model.startChat(); // ✅ no await
+    const model = genAI.getGenerativeModel({ model: 'models/gemini-2.0-flash' });
+    const chat = await model.startChat();
 
     const schema = await getMongoSchema();
     const history = memory.map(m => `${m.role}: ${m.content}`).join('\n');
 
-    const queryPrompt = `Based on this MongoDB schema for SimplyTix event management system:
+  const queryPrompt = `
+Based on this MongoDB schema for SimplyTix event management system:
 ${JSON.stringify(schema)}
 
 Collection details:
@@ -56,21 +57,22 @@ Output format:
 - Then: the aggregation pipeline as a valid JSON array (no markdown, no explanation).
 `;
 
-    // ✅ send as { text: ... }
-    const queryResponse = await chat.sendMessage([{ text: queryPrompt }]);
-    const output = queryResponse.response.text().trim();
-    const [collection, ...lines] = output.split('\n');
-    const pipeline = lines.join('\n');
+  const queryResponse = await chat.sendMessage(queryPrompt);
+  const output = queryResponse.response.text().trim();
+  const [collection, ...lines] = output.split('\n');
+  const pipeline = lines.join('\n');
 
-    console.log('\n🎫 SimplyTix Chatbot generated MongoDB query:');
-    console.log('Collection:', collection.trim());
-    console.log('Aggregation Pipeline:\n', pipeline);
+  // Log the MongoDB query
+  console.log('\n🎫 SimplyTix Chatbot generated MongoDB query:');
+  console.log('Collection:', collection.trim());
+  console.log('Aggregation Pipeline:\n', pipeline);
 
-    const results = await executeMongoQuery(collection.trim(), pipeline);
+  // Validate and execute the query
+  const results = await executeMongoQuery(collection.trim(), pipeline);
 
-    let finalPrompt;
-    if (!results.error && results[collection]?.length > 0) {
-      finalPrompt = `
+  let finalPrompt;
+  if (!results.error && results[collection]?.length > 0) {
+    finalPrompt = `
 You are TixBot, an intelligent and friendly chatbot for the SimplyTix event management platform.
 
 SimplyTix is an event ticketing and management system where users can:
@@ -104,9 +106,9 @@ Guidelines:
 - Use currency format (₹ for Indian Rupees) when discussing prices
 - Suggest related events or features when relevant
 - If no data is found, offer to help with alternative searches
-      `;
-    } else {
-      finalPrompt = `
+    `;
+  } else {
+    finalPrompt = `
 You are TixBot, a friendly chatbot for the SimplyTix event management platform.
 
 SimplyTix helps users discover events, purchase tickets, and manage their bookings.
@@ -128,11 +130,10 @@ Try asking about:
 - "Show me workshops in [your city]"
 - "What are the ticket prices for [event name]?"
 - "What events have I enrolled in?"
-      `;
-    }
+    `;
+  }
 
-    // ✅ send as { text: ... }
-    const finalResponse = await chat.sendMessage([{ text: finalPrompt }]);
+    const finalResponse = await chat.sendMessage(finalPrompt);
     const reply = finalResponse.response.text();
     const summary = summarizeConversation(userMessage, reply);
 
@@ -142,25 +143,27 @@ Try asking about:
     return reply;
   } catch (error) {
     console.error('Chat error:', error);
-
+    
+    // For now, provide a helpful response with common answers
     const lowerMessage = userMessage.toLowerCase();
-
+    
     if (lowerMessage.includes('event') || lowerMessage.includes('show')) {
       return `🎪 **Events & Shows**\n\nI can help you find events! Here are some popular categories:\n\n• **Workshops** - Educational and skill-building sessions\n• **Seminars** - Professional development talks\n• **Conferences** - Industry networking events\n• **Meetups** - Community gatherings\n• **Volunteer Activities** - Give back to the community\n\nVisit the dashboard to browse all available events by date, location, and category! 🎫`;
     }
-
+    
     if (lowerMessage.includes('ticket') || lowerMessage.includes('price') || lowerMessage.includes('cost')) {
       return `🎟️ **Ticket Information**\n\nTicket pricing varies by event:\n\n• **Free Events** - No cost, just register\n• **General Admission** - Standard pricing\n• **VIP Tickets** - Premium experience with perks\n• **Early Bird** - Discounted rates for early bookings\n\nCheck individual event pages for specific pricing. You can pay using:\n💳 Credit/Debit Cards\n📱 Mobile Payment\n💰 PayPal\n🪙 Account Points`;
     }
-
+    
     if (lowerMessage.includes('book') || lowerMessage.includes('buy') || lowerMessage.includes('purchase')) {
       return `📅 **Booking Tickets**\n\nTo book tickets:\n\n1. Browse events on the dashboard\n2. Click on an event you're interested in\n3. Select ticket type and quantity\n4. Choose payment method\n5. Complete your purchase\n6. Receive confirmation email\n\nYour tickets will appear in "My Tickets" section. Don't forget to check in at the event! ✅`;
     }
-
+    
     if (lowerMessage.includes('account') || lowerMessage.includes('profile') || lowerMessage.includes('points')) {
       return `👤 **Account & Points**\n\nYour SimplyTix account includes:\n\n• **Points System** - Earn points with purchases\n• **Subscription Status** - Premium benefits\n• **Booking History** - Track your events\n• **Notifications** - Stay updated\n\nUse points for discounts on future bookings! Check your account page for current balance and subscription details. 🪙`;
     }
-
+    
+    // Default response
     return `🤖 **Hi! I'm TixBot, your SimplyTix assistant!**\n\nI'm here to help with:\n• 🎪 Finding events and shows\n• 🎟️ Ticket pricing and availability\n• 📅 Booking and reservations\n• 👤 Account management\n• 💳 Payment information\n\n**Popular questions:**\n• "What events are happening this weekend?"\n• "Show me workshops in my area"\n• "How do I book tickets?"\n• "What are my account points?"\n\nWhat would you like to know? 🎫`;
   }
 }

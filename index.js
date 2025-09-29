@@ -25,7 +25,7 @@ app.post('/chat', async (req, res) => {
   }
 });
 
-const PORT = process.env.CHATBOTPORT|| 8000;
+const PORT = process.env.CHATBOTPORT|| 3008;
 app.listen(PORT, () => {
   console.log(`🤖 Chatbot Server running at http://localhost:${PORT} ✅`);
 });

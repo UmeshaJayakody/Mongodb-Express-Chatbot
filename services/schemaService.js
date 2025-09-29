@@ -1,6 +1,7 @@
 import { db } from './mongoService.js';
 
-const ALLOWED_COLLECTIONS = new Set(['discussions','posts','jobvcancies']);
+// SimplyTix collections based on the models we found
+const ALLOWED_COLLECTIONS = new Set(['events', 'users', 'tickets', 'payments', 'enrollments', 'notifications', 'earnings']);
 
 export async function getMongoSchema() {
   const schema = {};
@@ -13,5 +14,18 @@ export async function getMongoSchema() {
 
 export function isCollectionAllowed(name) {
   return ALLOWED_COLLECTIONS.has(name);
+}
+
+// SimplyTix specific helper functions
+export function getSimplyTixCollections() {
+  return Array.from(ALLOWED_COLLECTIONS);
+}
+
+export function getEventRelatedCollections() {
+  return ['events', 'tickets', 'enrollments', 'payments'];
+}
+
+export function getUserRelatedCollections() {
+  return ['users', 'tickets', 'payments', 'enrollments'];
 }
 
